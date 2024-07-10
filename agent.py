@@ -31,6 +31,7 @@ class IQN_Agent:
         worker,
         device,
         seed,
+        kappa,
     ):
         """Initialize an Agent object.
 
@@ -62,6 +63,7 @@ class IQN_Agent:
         self.lo = -1
         self.alpha = 0.9
         self.GAMMA = GAMMA
+        self.kappa = kappa
 
         self.BATCH_SIZE = BATCH_SIZE * worker
         self.Q_updates = 0
@@ -222,7 +224,7 @@ class IQN_Agent:
                 self.N,
                 self.N,
             ), "wrong td error shape"
-            huber_l = calculate_huber_loss(td_error, 1.0)
+            huber_l = calculate_huber_loss(td_error, self.kappa)
             quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
 
             loss = quantil_l.sum(dim=1).mean(
@@ -297,7 +299,7 @@ class IQN_Agent:
                 self.N,
                 self.N,
             ), "wrong td error shape"
-            huber_l = calculate_huber_loss(td_error, 1.0)
+            huber_l = calculate_huber_loss(td_error, self.kappa)
             quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
 
             loss = quantil_l.sum(dim=1).mean(
@@ -359,7 +361,7 @@ class IQN_Agent:
                 self.N,
                 self.N,
             ), "wrong td error shape"
-            huber_l = calculate_huber_loss(td_error, 1.0)
+            huber_l = calculate_huber_loss(td_error, self.kappa)
             quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
 
             loss = (
@@ -447,7 +449,7 @@ class IQN_Agent:
                 self.N,
                 self.N,
             ), "wrong td error shape"
-            huber_l = calculate_huber_loss(td_error, 1.0)
+            huber_l = calculate_huber_loss(td_error, self.kappa)
             quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
 
             loss = (

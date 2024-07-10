@@ -229,6 +229,12 @@ if __name__ == "__main__":
         default=1,
         help="Number of parallel Environments. Batch size increases proportional to number of worker. not recommended to have more than 4 worker, default = 1",
     )
+    parser.add_argument(
+        "-kappa",
+        type=float,
+        default=1.0,
+        help="kappa value in Huber loss, default = 1.0",
+    )
 
     args = parser.parse_args()
     writer = SummaryWriter("runs/" + args.info)
@@ -278,6 +284,7 @@ if __name__ == "__main__":
         worker=args.worker,
         device=device,
         seed=seed,
+        kappa=args.kappa,
     )
 
     # set epsilon frames to 0 so no epsilon exploration
