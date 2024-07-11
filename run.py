@@ -235,6 +235,12 @@ if __name__ == "__main__":
         default=1.0,
         help="kappa value in Huber loss, default = 1.0",
     )
+    parser.add_argument(
+        "-device",
+        type=str,
+        default="cuda:0",
+        help="Cuda device on which code is executed."
+    )
 
     args = parser.parse_args()
     writer = SummaryWriter("runs/" + args.info)
@@ -246,7 +252,9 @@ if __name__ == "__main__":
     LR = args.lr
     n_step = args.n_step
     env_name = args.env
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    assert torch.cuda.is_available()
+    device = torch.device(args.device)
     print("Using ", device)
 
     np.random.seed(seed)
