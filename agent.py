@@ -72,6 +72,9 @@ class IQN_Agent:
         self.UPDATE_EVERY = worker
         self.last_action = None
 
+        self.typical_self_loss = 0.01
+        self.typical_clamped_self_loss = 0.01
+
         if "noisy" in self.network:
             noisy = True
         else:
@@ -199,7 +202,7 @@ class IQN_Agent:
         if not self.munchausen:
             states, actions, rewards, next_states, dones = experiences
             # Get max predicted Q values (for next states) from target model
-            Q_targets_next, _ = self.qnetwork_target(next_states, self.N)
+            Q_targets_next, taus_targets = self.qnetwork_target(next_states, self.N)
             Q_targets_next = Q_targets_next.detach().cpu()
             action_indx = torch.argmax(Q_targets_next.mean(dim=1), dim=1, keepdim=True)
             Q_targets_next = Q_targets_next.gather(
@@ -226,10 +229,28 @@ class IQN_Agent:
             ), "wrong td error shape"
             huber_l = calculate_huber_loss(td_error, self.kappa)
             quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
-
             loss = quantil_l.sum(dim=1).mean(
                 dim=1
             )  # , keepdim=True if per weights get multipl
+
+            td_self_error = Q_targets - Q_targets.transpose(-1,-2)
+            assert td_self_error.shape == (
+                self.BATCH_SIZE,
+                self.N,
+                self.N,
+            ), "wrong td error shape"
+            huber_self_l = calculate_huber_loss(td_self_error, self.kappa)
+            quantil_self_l = abs(taus_targets - (td_self_error.detach() < 0).float()) * huber_self_l / 1.0
+            target_self_loss = quantil_l.sum(dim=1).mean(
+                dim=1
+            )  # , keepdim=True if per weights get multipl
+            target_self_loss = torch.sqrt(target_self_loss)
+
+            self.typical_self_loss = 0.99 * self.typical_self_loss + 0.01 * target_self_loss.mean()
+            correction_clamped = target_self_loss.clamp(min=self.typical_self_loss / 4)
+            self.typical_clamped_self_loss = 0.99 * self.typical_clamped_self_loss + 0.01 * correction_clamped.mean()
+            loss *= self.typical_clamped_self_loss / correction_clamped
+
             loss = loss.mean()
         else:
             states, actions, rewards, next_states, dones = experiences
