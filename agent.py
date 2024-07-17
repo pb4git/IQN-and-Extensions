@@ -233,14 +233,14 @@ class IQN_Agent:
                 dim=1
             )  # , keepdim=True if per weights get multipl
 
-            td_self_error = Q_targets - Q_targets.transpose(-1,-2)
+            td_self_error = Q_targets.detach() - Q_targets.detach().transpose(-1,-2)
             assert td_self_error.shape == (
                 self.BATCH_SIZE,
                 self.N,
                 self.N,
             ), "wrong td error shape"
             huber_self_l = calculate_huber_loss(td_self_error, self.kappa)
-            quantil_self_l = abs(taus_targets - (td_self_error.detach() < 0).float()) * huber_self_l / 1.0
+            quantil_self_l = abs(taus_targets.detach() - (td_self_error.detach() < 0).float()) * huber_self_l / 1.0
             target_self_loss = quantil_l.sum(dim=1).mean(
                 dim=1
             )  # , keepdim=True if per weights get multipl
