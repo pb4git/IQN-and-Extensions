@@ -241,14 +241,14 @@ class IQN_Agent:
             ), "wrong td error shape"
             huber_self_l = calculate_huber_loss(td_self_error, self.kappa)
             quantil_self_l = abs(taus_targets.detach() - (td_self_error.detach() < 0).float()) * huber_self_l / 1.0
-            target_self_loss = quantil_l.sum(dim=1).mean(
+            target_self_loss = quantil_self_l.sum(dim=1).mean(
                 dim=1
             )  # , keepdim=True if per weights get multipl
             target_self_loss = torch.sqrt(target_self_loss)
 
-            self.typical_self_loss = 0.99 * self.typical_self_loss + 0.01 * target_self_loss.mean()
+            self.typical_self_loss = 0.999 * self.typical_self_loss + 0.001 * target_self_loss.mean()
             correction_clamped = target_self_loss.clamp(min=self.typical_self_loss / 4)
-            self.typical_clamped_self_loss = 0.99 * self.typical_clamped_self_loss + 0.01 * correction_clamped.mean()
+            self.typical_clamped_self_loss = 0.999 * self.typical_clamped_self_loss + 0.001 * correction_clamped.mean()
             loss *= self.typical_clamped_self_loss / correction_clamped
 
             loss = loss.mean()
